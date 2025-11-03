@@ -51,6 +51,7 @@ df_merged['fips'] = (
 )
 
 #save as new .dta file to cd
-df_merged.to_stata("your_file_with_fips.dta", write_index=False)
+df_merged.to_stata("fipsnew.dta", write_index=False)
 
 print("FIPS codes added successfully.")
+
