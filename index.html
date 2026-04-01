@@ -1342,18 +1342,28 @@ p_seed_projection &lt;- <span class="tok-fn">ggplot</span>() +
   <span class="tok-fn">scale_y_continuous</span>(breaks = <span class="tok-fn">seq</span>(<span class="tok-num">0</span>, <span class="tok-num">6</span>, <span class="tok-num">1</span>), limits = <span class="tok-fn">c</span>(<span class="tok-num">0</span>, <span class="tok-num">6</span>)) +  <span class="tok-cm"># 6 wins = champion</span>
   <span class="tok-fn">labs</span>(
     title    = <span class="tok-str">"Seed vs Projected Tournament Wins — 2026 NCAA Tournament"</span>,
-    subtitle = <span class="tok-str">"Logos = MC projected wins; black line = historical seed expectation"</span>,
+    subtitle = <span class="tok-str">"Logos show Monte Carlo projected wins; black line shows historical seed expectation"</span>,
     x        = <span class="tok-str">"Seed"</span>,
     y        = <span class="tok-str">"Projected Tournament Wins"</span>,
-    caption  = <span class="tok-str">"Historical baseline: 2011–2025 | Grey band = IQR by seed"</span>
-  ) +
-  <span class="tok-fn">theme_minimal</span>(base_size = <span class="tok-num">20</span>) +
+    caption  = <span class="tok-fn">paste0</span>(
+      <span class="tok-str">"Historical baseline: 2011–2025 tournaments\n"</span>,
+      <span class="tok-str">"Grey band = historical interquartile range of wins for that seed"</span>
+    ) +
+<span class="tok-fn">theme_minimal</span>(base_size = <span class="tok-num">20</span>) +
   <span class="tok-fn">theme</span>(
-    plot.title       = <span class="tok-fn">element_text</span>(face = <span class="tok-str">"bold"</span>, size = <span class="tok-num">32</span>),
+    plot.title       = <span class="tok-fn">element_text</span>(face = <span class="tok-str">"bold"</span>, size = <span class="tok-num">32</span>, color = <span class="tok-str">"black"</span>),
+    plot.subtitle    = <span class="tok-fn">element_text</span>(size = <span class="tok-num">22</span>, color = <span class="tok-str">"grey30"</span>),
+    plot.caption     = <span class="tok-fn">element_text</span>(size = <span class="tok-num">18</span>, color = <span class="tok-str">"grey40"</span>),
+    axis.title.x     = <span class="tok-fn">element_text</span>(size = <span class="tok-num">22</span>, face = <span class="tok-str">"bold"</span>),
+    axis.title.y     = <span class="tok-fn">element_text</span>(size = <span class="tok-num">22</span>, face = <span class="tok-str">"bold"</span>),
+    axis.text        = <span class="tok-fn">element_text</span>(size = <span class="tok-num">18</span>),
     panel.grid.minor = <span class="tok-fn">element_blank</span>(),
     panel.grid.major = <span class="tok-fn">element_line</span>(color = <span class="tok-str">"#E6E6E6"</span>, linewidth = <span class="tok-num">0.7</span>)
   )
 
+<span class="tok-cm"># Render plot</span>
+<span class="tok-fn">print</span>(p_seed_projection)
+        
 <span class="tok-fn">ggsave</span>(<span class="tok-str">"seed_vs_projected_wins_2026.png"</span>, p_seed_projection,
        width = <span class="tok-num">13</span>, height = <span class="tok-num">7</span>, dpi = <span class="tok-num">200</span>, bg = <span class="tok-str">"white"</span>)</code></div>
       <div class="code-sample-desc">ggplot2 visualization pipeline for the NCAA prediction model. Constructs a historical IQR ribbon and mean-wins baseline by seed from 2011–2025 tournament data, then overlays each 2026 team's Monte Carlo projected wins as their logo — making it immediately visible which teams are beating or trailing seed expectations.</div>
