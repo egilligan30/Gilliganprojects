@@ -1049,7 +1049,7 @@ EXTRA_COL = <span class="tok-str">"extra_updated"</span>   <span class="tok-cm">
         df = df.<span class="tok-fn">with_columns</span>(updated[col].<span class="tok-fn">alias</span>(col))
 
     <span class="tok-kw">return</span> df.<span class="tok-fn">lazy</span>()</code></div>
-      <div class="code-sample-desc">Polars-based cleaning pipeline for Worrall's <em>Cotton Spinners' &amp; Manufacturers' Directory</em> — a late Victorian trade directory digitised via Claude-assisted PDF extraction. Corrects three systematic imputation errors: forward-fills location headers across blank rows, rescues telephone/telegram fragments absorbed into firm name fields, and reconciles weft/twist count columns against the raw Details field — fixing swaps, filling gaps, and quarantining inconsistent values in an auditable log rather than dropping them.</div>
+      <div class="code-sample-desc">Polars-based cleaning pipeline for Worrall's <em>Cotton Spinners' &amp; Manufacturers' Directory</em> — an industrial revolution (late 19th, early 20th century) trade directory digitised via Claude-assisted PDF extraction. Corrects three systematic imputation errors: forward-fills location headers across blank rows, removes telephone/telegram fragments absorbed into firm name fields, and reconciles weft/twist count columns against the raw Details field — fixing swaps, filling gaps, and moving inconsistent values to an auditable log rather than dropping them.</div>
     </div>
 
     <!-- STATA -->
