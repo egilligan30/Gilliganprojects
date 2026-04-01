@@ -27,7 +27,7 @@ class C(BaseConstants):
                                   # If they can't cover it, it rolls into debt instead
 
     DEBT_LIMIT = cu(500)          # If a player accumulates cu(500) or more in debt, they go bankrupt
-                                  # This is the hard ceiling — a point of no return
+                                  # This is the hard ceiling
 
 
 # ============================================================
@@ -57,7 +57,7 @@ class Player(BasePlayer):
 
     bet_amount = models.CurrencyField(
         label="Enter your bet amount:",
-        min=cu(0),     # Can't bet negative — no shorting allowed here
+        min=cu(0),     # Can't bet negative
         max=cu(250),   # Hard cap at 250 so players can't go all-in beyond their starting balance
         initial=cu(0)  # Defaults to 0 if they don't enter anything
     )
@@ -114,7 +114,7 @@ def process_bet(player: Player):
         multiplier = odds / 100       # e.g., +300 odds → multiplier = 3.0 (win 3x your bet)
 
     # --- Step 4: Calculate win probability ---
-    # We don't use true fair odds — there's a slight house edge baked in.
+    # We don't use true fair odds.
     # The formula tilts probability toward 50% but favors the house:
     #   - Negative odds (favorites) have slightly LOWER win probability than implied
     #   - Positive odds (underdogs) have slightly HIGHER win probability than implied
@@ -156,8 +156,6 @@ def process_bet(player: Player):
 # ============================================================
 
 # --- Introduction: Only shown in round 1 ---
-# A welcome/context-setting page before anything happens.
-# is_displayed() is how oTree conditionally shows pages.
 
 class Introduction(Page):
     @staticmethod
@@ -166,7 +164,6 @@ class Introduction(Page):
 
 
 # --- Instructions: Also round 1 only ---
-# Walks the participant through the rules before they start betting.
 
 class Instructions(Page):
     @staticmethod
@@ -175,7 +172,6 @@ class Instructions(Page):
 
 
 # --- Bet: The main decision page, shown every round ---
-# This is where participants choose how much to bet and at what odds.
 
 class Bet(Page):
     form_model  = 'player'                        # Tells oTree which model to save form data to
@@ -193,7 +189,7 @@ class Bet(Page):
         else:
             min_odds, max_odds = -400, 400   # Full range for experienced players
 
-        # Pull the current financial state from the *previous* round's data
+        # Pull the current financial state from the previous round's data
         # (the current round's fields haven't been processed yet at this point)
         if player.round_number > 1:
             prev            = player.in_round(player.round_number - 1)
