@@ -1161,25 +1161,12 @@ EXTRA_COL = <span class="tok-str">"extra_updated"</span>   <span class="tok-cm">
 <span class="tok-cm">* Scenario 1: every product gets a flat 10% price increase</span>
 <span class="tok-kw">gen</span> <span class="tok-kw">double</span> price_cf_uniform = price_wmean * <span class="tok-num">1.10</span>
 
-<span class="tok-cm">* Size doesn't change here, but we define it anyway so this scenario
-* follows the same structure as the size scenario below</span>
-<span class="tok-kw">gen</span> <span class="tok-kw">double</span> size_cf_uniform = size_oz
-
 <span class="tok-cm">* Shift predicted utility by the price change, scaled by each product's
 * own price coefficient (beta_price_j varies by product since it
 * incorporates the continuous interactions estimated above)</span>
 <span class="tok-kw">gen</span> <span class="tok-kw">double</span> delta_cf_uniform = delta_hat ///
     + beta_price_j * (price_cf_uniform - price_wmean)
-
-<span class="tok-cm">* If size_oz has a coefficient in the model, fold that in too —
-* it contributes nothing here since size is unchanged, but keeps
-* the code general for scenarios where size does shift</span>
-<span class="tok-fn">capture confirm</span> name _b[size_oz]
-<span class="tok-kw">if</span> !_rc {
-    <span class="tok-kw">replace</span> delta_cf_uniform = delta_cf_uniform ///
-        + _b[size_oz] * (size_cf_uniform - size_oz)
-}
-
+        
 <span class="tok-cm">* Sum exp(delta) across all products in each store-week market —
 * this is the logit denominator we need to convert utilities to shares</span>
 <span class="tok-kw">bysort</span> store week: <span class="tok-kw">egen</span> <span class="tok-kw">double</span> denom_cf_uniform = <span class="tok-fn">total</span>(exp(delta_cf_uniform))
