@@ -101,24 +101,11 @@ predict yhat_large, xb
 * Scenario 1: every product gets a flat 10% price increase
 gen double price_cf_uniform = price_wmean * 1.10
 
-* Size doesn't change here, but we define it anyway so this scenario
-* follows the same structure as the size scenario below
-gen double size_cf_uniform = size_oz
-
 * Shift predicted utility by the price change, scaled by each product's
 * own price coefficient (beta_price_j varies by product since it
 * incorporates the continuous interactions estimated above)
 gen double delta_cf_uniform = delta_hat ///
     + beta_price_j * (price_cf_uniform - price_wmean)
-
-* If size_oz has a coefficient in the model, fold that in too —
-* it contributes nothing here since size is unchanged, but keeps
-* the code general for scenarios where size does shift
-capture confirm name _b[size_oz]
-if !_rc {
-    replace delta_cf_uniform = delta_cf_uniform ///
-        + _b[size_oz] * (size_cf_uniform - size_oz)
-}
 
 * Sum exp(delta) across all products in each store-week market —
 * this is the logit denominator we need to convert utilities to shares
