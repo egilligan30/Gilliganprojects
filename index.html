@@ -1370,15 +1370,267 @@ p_seed_projection &lt;- <span class="tok-fn">ggplot</span>() +
       <div class="code-sample-desc">ggplot2 visualization pipeline for the NCAA prediction model. Constructs a historical IQR ribbon and mean-wins baseline by seed from 2011–2025 tournament data, then overlays each 2026 team's Monte Carlo projected wins as their logo — making it immediately visible which teams are beating or trailing seed expectations.</div>
     </div>
 
-    <!-- MATLAB (placeholder) -->
     <div class="code-sample-panel" id="code-matlab">
       <div class="code-sample-header">
-        <span class="code-sample-title">Matlab — Sample Coming Soon</span>
+        <span class="code-sample-title">matlabcodesample.m — Hamiltonian and Gradient Flow Visualization</span>
+        <a class="code-sample-link" href="#" target="_blank">View script →</a>
       </div>
-      <div class="code-block" style="min-height:160px; display:flex; align-items:center; justify-content:center;">
-        <code style="color:#4a5a72; font-style:italic;">% Matlab sample coming soon</code>
-      </div>
-      <div class="code-sample-desc">A Matlab code sample from a project will be added here shortly.</div>
+      <div class="code-block"><code><span class="tok-cm">%% PURPOSE
+% This script visualizes and compares two dynamical systems that can be derived
+% from a single scalar function H(x,y) — the "Hamiltonian".
+% 
+% Given H, two natural vector fields arise:
+%
+%   (1) Hamiltonian system:  (dx/dt, dy/dt) = ( ∂H/∂y, -∂H/∂x )
+%       Trajectories orbit along level curves of H. Because H is constant along
+%       solutions, this system cannot converge to a fixed
+%       point or diverge to infinity.
+%
+%   (2) Gradient system:     (dx/dt, dy/dt) = ( ∂H/∂x,  ∂H/∂y )
+%       Trajectories climb in the direction of steepest ascent of H, crossing
+%       level curves perpendicularly. The sign can be flipped for gradient descent.
+%
+% Producing both portraits side-by-side makes the geometric duality immediately
+% visible: the two families of curves are everywhere orthogonal to each other
+% (except at critical points of H).</span>
+
+<span class="tok-cm">%% SCRIPT OUTLINE
+%   Section 1 — User parameters: define H, domain, resolution, and plot options.
+%               Edit here to experiment with different Hamiltonians or domains.
+%   Section 2 — Numerical derivatives: build anonymous functions for ∂H/∂x and
+%               ∂H/∂y using central finite differences.
+%   Section 3 — Grid & vector fields: construct the meshgrid, evaluate H and
+%               both vector fields at every grid point.
+%   Section 4 — Visualization:
+%       (4a) Side-by-side phase portraits — Hamiltonian on the left (contours +
+%            quiver), gradient system on the right (streamlines + quiver).
+%       (4b) Overlay — both families drawn on one axes to make orthogonality
+%            immediately visible.</span>
+
+<span class="tok-kw">clear</span>; <span class="tok-kw">clc</span>; <span class="tok-kw">close</span> all;
+
+<span class="tok-cm">%% ===================== 1. USER INPUT / PARAMETERS =====================
+% -----------------------------------------------------------------------
+% SCALAR FUNCTION H(x,y)
+%   This is the only line you need to change to study a different system.
+%   Classic examples to try:
+%       H = @(x,y) x.^2 + y.^2;           
+%       H = @(x,y) x.^2 - y.^2;           
+%       H = @(x,y) sin(x).*cos(y);        
+% -----------------------------------------------------------------------</span>
+H = @(x,y) x.^<span class="tok-num">2</span> - <span class="tok-num">2</span>*x.*y - y.^<span class="tok-num">2</span> + <span class="tok-num">2</span>*x - <span class="tok-num">2</span>*y + <span class="tok-num">2</span>;
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% FINITE DIFFERENCE STEP SIZE
+%   Used to numerically approximate ∂H/∂x and ∂H/∂y (see Section 2).
+%   Should be small enough for accuracy but not so small that floating-point
+%   cancellation dominates.
+% -----------------------------------------------------------------------</span>
+eps_fd = <span class="tok-num">1e-5</span>;
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% DOMAIN AND GRID RESOLUTION
+%   x_range / y_range define the window shown in each plot.
+%   grid_N controls how many sample points are used along each axis.
+%   Larger grid_N gives smoother contours but increases memory usage.
+% -----------------------------------------------------------------------</span>
+x_range = [-<span class="tok-num">3</span>, <span class="tok-num">3</span>];
+y_range = [-<span class="tok-num">3</span>, <span class="tok-num">3</span>];
+grid_N  = <span class="tok-num">400</span>;
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% QUIVER DISPLAY SETTINGS
+%   quiver_skip: only every k-th grid point gets an arrow; prevents the plot
+%                from being buried under overlapping arrows.
+%   quiver_scale: scales arrow length; smaller values shorten arrows.
+%   Arrows are normalized to unit length before scaling so that the quiver
+%   shows direction only, not magnitude.
+% -----------------------------------------------------------------------</span>
+quiver_skip  = <span class="tok-num">20</span>;
+quiver_scale = <span class="tok-num">0.4</span>;
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% CONTOUR LEVELS
+%   These are the values of H at which level curves are drawn. They become
+%   the Hamiltonian trajectories in the left panel and the reference curves
+%   in the overlay; adjust the range to cover the domain of interest.
+% -----------------------------------------------------------------------</span>
+H_levels = <span class="tok-fn">linspace</span>(<span class="tok-num">0.1</span>, <span class="tok-num">16</span>, <span class="tok-num">10</span>);
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% STREAMLINE SEED POINTS (for gradient flow)
+%   Streamlines are integrated forward along the gradient vector field
+%   starting from these (x,y) positions.
+%   Add or remove seeds to trace different regions.
+% -----------------------------------------------------------------------</span>
+startX = [-<span class="tok-num">2</span> -<span class="tok-num">1.5</span> -<span class="tok-num">1</span> -<span class="tok-num">0.5</span>  <span class="tok-num">0</span>  <span class="tok-num">0.5</span>  <span class="tok-num">1</span>  <span class="tok-num">1.5</span>  <span class="tok-num">2</span> ...
+          -<span class="tok-num">2</span> -<span class="tok-num">1.5</span> -<span class="tok-num">1</span> -<span class="tok-num">0.5</span>  <span class="tok-num">0</span>  <span class="tok-num">0.5</span>  <span class="tok-num">1</span>  <span class="tok-num">1.5</span>  <span class="tok-num">2</span>];
+
+startY = [-<span class="tok-num">2</span> -<span class="tok-num">2</span>   -<span class="tok-num">2</span> -<span class="tok-num">2</span>   -<span class="tok-num">2</span> -<span class="tok-num">2</span>   -<span class="tok-num">2</span> -<span class="tok-num">2</span>   -<span class="tok-num">2</span> ...
+           <span class="tok-num">2</span>  <span class="tok-num">2</span>    <span class="tok-num">2</span>  <span class="tok-num">2</span>    <span class="tok-num">2</span>  <span class="tok-num">2</span>    <span class="tok-num">2</span>  <span class="tok-num">2</span>    <span class="tok-num">2</span>];
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% PLOT TOGGLES
+%   Set either flag to false to skip that figure.
+% -----------------------------------------------------------------------</span>
+make_side_by_side = <span class="tok-kw">true</span>;
+make_overlay      = <span class="tok-kw">true</span>;
+
+<span class="tok-cm">%% ===================== 2. NUMERICAL DERIVATIVES =====================
+% -----------------------------------------------------------------------
+% Central finite difference formulas:
+%   ∂H/∂x ≈ [ H(x + ε, y) - H(x - ε, y) ] / (2ε)
+%   ∂H/∂y ≈ [ H(x, y + ε) - H(x, y - ε) ] / (2ε)
+%
+% Central differences are second-order accurate (error ~ ε²).
+% Both Hx and Hy are returned as anonymous functions so they can be called
+% on scalars, vectors, or full meshgrids with identical syntax.
+% -----------------------------------------------------------------------</span>
+Hx = @(x,y) (H(x+eps_fd, y) - H(x-eps_fd, y)) / (<span class="tok-num">2</span>*eps_fd);
+Hy = @(x,y) (H(x, y+eps_fd) - H(x, y-eps_fd)) / (<span class="tok-num">2</span>*eps_fd);
+
+<span class="tok-cm">%% ===================== 3. GRID + VECTOR FIELDS =====================
+% -----------------------------------------------------------------------
+% Build a uniform rectangular grid over the specified domain.
+%   xv, yv are 1-D coordinate vectors (length grid_N each).
+%   meshgrid returns 2-D arrays X and Y of size (grid_N × grid_N) so that
+%   every (X(i,j), Y(i,j)) pair is a distinct point in the domain.
+% -----------------------------------------------------------------------</span>
+xv = <span class="tok-fn">linspace</span>(x_range(<span class="tok-num">1</span>), x_range(<span class="tok-num">2</span>), grid_N);
+yv = <span class="tok-fn">linspace</span>(y_range(<span class="tok-num">1</span>), y_range(<span class="tok-num">2</span>), grid_N);
+[X, Y] = <span class="tok-fn">meshgrid</span>(xv, yv);
+
+<span class="tok-cm">% Evaluate the scalar field H at every grid point.
+% H_vals is used for drawing the level curves.</span>
+H_vals = H(X, Y);
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% Hamiltonian vector field: rotate the gradient 90° counter-clockwise.
+%   (Ux, Vx) = ( ∂H/∂y, -∂H/∂x )
+%   This 90° rotation is what makes trajectories flow along the level 
+%   curves of H.
+% -----------------------------------------------------------------------</span>
+U_ham  =  Hy(X, Y);   <span class="tok-cm">%  x-component of ∂H/∂y</span>
+V_ham  = -Hx(X, Y);   <span class="tok-cm">%  y-component of -∂H/∂x</span>
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% Gradient vector field:
+%   (Ux, Vx) = ( ∂H/∂x, ∂H/∂y )
+% -----------------------------------------------------------------------</span>
+U_grad =  Hx(X, Y);   <span class="tok-cm">%  x-component of ∂H/∂x</span>
+V_grad =  Hy(X, Y);   <span class="tok-cm">%  y-component of ∂H/∂y</span>
+
+<span class="tok-cm">%% ===================== 4. VISUALIZATION PREP =====================
+% -----------------------------------------------------------------------
+% Quiver plots:
+%   Using every grid point would pack arrows so densely they become
+%   unreadable. Keeping only every (quiver_skip)-th row and column
+%   gives a legible figure.
+% -----------------------------------------------------------------------</span>
+sk = quiver_skip;
+
+Xq   = X(<span class="tok-num">1</span>:sk:end, <span class="tok-num">1</span>:sk:end);
+Yq   = Y(<span class="tok-num">1</span>:sk:end, <span class="tok-num">1</span>:sk:end);
+
+Uq_h = U_ham(<span class="tok-num">1</span>:sk:end,  <span class="tok-num">1</span>:sk:end);
+Vq_h = V_ham(<span class="tok-num">1</span>:sk:end,  <span class="tok-num">1</span>:sk:end);
+
+Uq_g = U_grad(<span class="tok-num">1</span>:sk:end, <span class="tok-num">1</span>:sk:end);
+Vq_g = V_grad(<span class="tok-num">1</span>:sk:end, <span class="tok-num">1</span>:sk:end);
+
+<span class="tok-cm">% -----------------------------------------------------------------------
+% Normalize arrows to unit length before passing to quiver.
+%   Without normalization, arrows in high-gradient regions would dwarf those
+%   in low-gradient regions and obscure the structure. The small
+%   constant (1e-10) prevents division by zero near critical points.
+% -----------------------------------------------------------------------</span>
+mag_h = <span class="tok-fn">sqrt</span>(Uq_h.^<span class="tok-num">2</span> + Vq_h.^<span class="tok-num">2</span>) + <span class="tok-num">1e-10</span>;
+mag_g = <span class="tok-fn">sqrt</span>(Uq_g.^<span class="tok-num">2</span> + Vq_g.^<span class="tok-num">2</span>) + <span class="tok-num">1e-10</span>;
+
+<span class="tok-cm">%% ===================== 4a. SIDE-BY-SIDE PLOTS =====================</span>
+<span class="tok-kw">if</span> make_side_by_side
+    <span class="tok-fn">figure</span>(<span class="tok-str">'Color'</span>,<span class="tok-str">'white'</span>,<span class="tok-str">'Position'</span>,[<span class="tok-num">100</span> <span class="tok-num">100</span> <span class="tok-num">1200</span> <span class="tok-num">520</span>]);
+
+    <span class="tok-cm">% Hamiltonian system:</span>
+    <span class="tok-fn">subplot</span>(<span class="tok-num">1</span>,<span class="tok-num">2</span>,<span class="tok-num">1</span>); <span class="tok-fn">hold</span> on; <span class="tok-fn">axis</span> equal; <span class="tok-fn">box</span> on;
+
+    <span class="tok-cm">% Draw level curves of H </span>
+    <span class="tok-fn">contour</span>(X, Y, H_vals, H_levels, <span class="tok-str">'LineWidth'</span>, <span class="tok-num">1.5</span>, ...
+            <span class="tok-str">'LineColor'</span>, [<span class="tok-num">0.18</span> <span class="tok-num">0.53</span> <span class="tok-num">0.82</span>]);
+
+    <span class="tok-cm">% Overlay direction arrows to show flow direction on each curve</span>
+    <span class="tok-fn">quiver</span>(Xq, Yq, Uq_h./mag_h, Vq_h./mag_h, quiver_scale, ...
+           <span class="tok-str">'Color'</span>, [<span class="tok-num">0.18</span> <span class="tok-num">0.53</span> <span class="tok-num">0.82</span> <span class="tok-num">0.55</span>]);
+
+    <span class="tok-cm">% Mark the origin as a reference point</span>
+    <span class="tok-fn">plot</span>(<span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-str">'ko'</span>, <span class="tok-str">'MarkerFaceColor'</span>, <span class="tok-str">'k'</span>);
+
+    <span class="tok-fn">xlabel</span>(<span class="tok-str">'x'</span>); <span class="tok-fn">ylabel</span>(<span class="tok-str">'y'</span>);
+    <span class="tok-fn">xlim</span>(x_range); <span class="tok-fn">ylim</span>(y_range);
+    <span class="tok-fn">title</span>(<span class="tok-str">'Hamiltonian system'</span>);
+
+    <span class="tok-cm">% Gradient system:</span>
+    <span class="tok-fn">subplot</span>(<span class="tok-num">1</span>,<span class="tok-num">2</span>,<span class="tok-num">2</span>); <span class="tok-fn">hold</span> on; <span class="tok-fn">axis</span> equal; <span class="tok-fn">box</span> on;
+
+    <span class="tok-cm">% Draw the same level curves as dashed gray lines for reference</span>
+    <span class="tok-fn">contour</span>(X, Y, H_vals, H_levels, <span class="tok-str">'LineStyle'</span>,<span class="tok-str">'--'</span>, ...
+            <span class="tok-str">'LineColor'</span>, [<span class="tok-num">0.6</span> <span class="tok-num">0.6</span> <span class="tok-num">0.6</span>]);
+
+    <span class="tok-cm">% Normalize the gradient field before integration</span>
+    mag_g_full = <span class="tok-fn">sqrt</span>(U_grad.^<span class="tok-num">2</span> + V_grad.^<span class="tok-num">2</span>) + <span class="tok-num">1e-10</span>;
+
+    <span class="tok-fn">streamline</span>(X, Y, ...
+        U_grad./mag_g_full, V_grad./mag_g_full, ...
+        startX, startY);
+
+    <span class="tok-cm">% Add direction arrows</span>
+    <span class="tok-fn">quiver</span>(Xq, Yq, Uq_g./mag_g, Vq_g./mag_g, quiver_scale, ...
+           <span class="tok-str">'Color'</span>, [<span class="tok-num">0.85</span> <span class="tok-num">0.29</span> <span class="tok-num">0.29</span> <span class="tok-num">0.5</span>]);
+
+    <span class="tok-cm">% Mark the origin for spatial reference</span>
+    <span class="tok-fn">plot</span>(<span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-str">'ko'</span>, <span class="tok-str">'MarkerFaceColor'</span>, <span class="tok-str">'k'</span>);
+
+    <span class="tok-fn">xlabel</span>(<span class="tok-str">'x'</span>); <span class="tok-fn">ylabel</span>(<span class="tok-str">'y'</span>);
+    <span class="tok-fn">xlim</span>(x_range); <span class="tok-fn">ylim</span>(y_range);
+    <span class="tok-fn">title</span>(<span class="tok-str">'Gradient system'</span>);
+
+    <span class="tok-cm">% Shared title for both panels</span>
+    <span class="tok-fn">sgtitle</span>(<span class="tok-str">'Orthogonal phase portrait families'</span>);
+<span class="tok-kw">end</span>
+
+<span class="tok-cm">%% ===================== 4b. OVERLAY =====================
+% Draw both on one set of axes.
+% Blue = level curves of H.
+% Red = gradient paths.</span>
+<span class="tok-kw">if</span> make_overlay
+    <span class="tok-fn">figure</span>(<span class="tok-str">'Color'</span>,<span class="tok-str">'white'</span>);
+    <span class="tok-fn">hold</span> on; <span class="tok-fn">axis</span> equal; <span class="tok-fn">box</span> on;
+
+    <span class="tok-cm">% Hamiltonian level curves as solid blue lines.
+    % [~, hc] gets the contour object for the legend</span>
+    [~, hc] = <span class="tok-fn">contour</span>(X, Y, H_vals, H_levels, <span class="tok-str">'LineWidth'</span>, <span class="tok-num">1.8</span>);
+    hc.LineColor = [<span class="tok-num">0.18</span> <span class="tok-num">0.53</span> <span class="tok-num">0.82</span>];
+
+    <span class="tok-cm">% Gradient trajectories in red.</span>
+    h_stream2 = <span class="tok-fn">streamline</span>(X, Y, U_grad, V_grad, startX, startY);
+    <span class="tok-fn">set</span>(h_stream2, <span class="tok-str">'Color'</span>, [<span class="tok-num">0.85</span> <span class="tok-num">0.29</span> <span class="tok-num">0.29</span>]);
+
+    <span class="tok-cm">% Mark the origin</span>
+    <span class="tok-fn">plot</span>(<span class="tok-num">0</span>, <span class="tok-num">0</span>, <span class="tok-str">'ko'</span>, <span class="tok-str">'MarkerFaceColor'</span>, <span class="tok-str">'k'</span>);
+
+    <span class="tok-fn">xlabel</span>(<span class="tok-str">'x'</span>); <span class="tok-fn">ylabel</span>(<span class="tok-str">'y'</span>);
+    <span class="tok-fn">xlim</span>(x_range); <span class="tok-fn">ylim</span>(y_range);
+
+    <span class="tok-fn">title</span>(<span class="tok-str">'Overlaid: Hamiltonian ⟂ Gradient flow'</span>);
+
+    <span class="tok-cm">% Legend uses the contour object and the first streamline handle</span>
+    <span class="tok-fn">legend</span>([hc, h_stream2(<span class="tok-num">1</span>)], ...
+        {<span class="tok-str">'Hamiltonian trajectories'</span>, <span class="tok-str">'Gradient trajectories'</span>}, ...
+        <span class="tok-str">'Location'</span>, <span class="tok-str">'southeast'</span>);
+<span class="tok-kw">end</span>;</code></div>
+      <div class="code-sample-desc">Visualizes a Hamiltonian system and its associated gradient flow, derived from a single scalar function H(x,y).
+      Hamiltonian trajectories orbit along level curves; gradient paths cross them perpendicularly.
+      Uses central finite differences for numerical derivatives and normalized quiver arrows for direction-only display.</div>
     </div>
 
 
